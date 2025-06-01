@@ -17,6 +17,13 @@ let allProducts = [
   // ... (fakestoreapi.com/products から他の商品データを追加するか、一部でテスト)
 ];
 
+// --- カートデータ (インメモリ) ---
+// { userId: [CartItem, CartItem, ...] } という形式を想定
+// CartItem は { ...productDetails, quantity: number }
+let userCarts = {
+    'defaultUser': []
+};
+
 app.use(cors());
 app.use(express.json());
 
@@ -66,7 +73,107 @@ app.get('/api/products/:id', (req, res) => {
     }
 });
 
-// リクエストの待受を開始
-app.listen(PORT, () => {
-    console.log(`API server running on http://localhost:${PORT}`);
+// カートAPIエンドポイント
+// GET /api/cart - 現在のユーザーのカート情報を取得
+app.get('/api/cart', (req, res) => {
+    const userId = 'defaultUser';
+    const userCart = userCarts[userId] || [];
+    // console.log(`[API GET /api/cart] Sending cart for ${userId}:`, userCart);
+    res.json(userCart);
+})
+
+// POST /api/cart/items - カートに商品を追加 (または数量をインクリメント)
+app.post('/api/cart/items', (req, res) => {
+    const userId = 'defaultUser';
+    const {productId, quantity = 1} = req.body;
+    
+    if (!productId || typeof quantity !== 'number' || quantity <= 0) {
+        return res.status(400).json({ message: 'Invalid productId or quantity.' });
+    }
+
+    const productToAdd = allProducts.find(product => product.id === Number(productId));
+    if(!productToAdd){
+        return res.status(404).json({ message: 'Product not found.' });
+    }
+    if(!userCarts[userId]){
+        userCarts[userId] = [];
+    }
+    const cart = userCarts[userId];
+    const existingItemIndex = cart.findIndex(item => item.id === Number(productId));
+
+    if(existingItemIndex > -1) {
+        cart[existingItemIndex].quantity += quantity;
+    }else{
+        cart.push({...productToAdd, quantity: quantity});
+    }
+    // console.log(`[API POST /api/cart/items] Cart for ${userId} updated:`, cart);
+    res.status(200).json(cart);
+})
+
+// PUT /api/cart/items/:productId - カート商品の数量を特定の値に更新
+app.put('/api/cart/items/:productId', (req, res) => {
+    const userId = 'defaultUser';
+    const productIdToUpdate = parseInt(req.params.productId, 10);
+    const { quantity } = req.body;
+
+    if(isNaN(productIdToUpdate) || typeof quantity !== 'number' || quantity < 0){
+        return res.status(400).json({message: 'Invalid productId or quantity.'});
+    }
+    if(!userCarts[userId]){
+        userCarts[userId] = [];
+    }
+    const cart = userCarts[userId];
+    const itemIndex = cart.findIndex(item => item.id === productIdToUpdate);
+
+    if (itemIndex === -1 && quantity > 0) { // カートに無く、数量が0より大きい場合は新規追加として振る舞うか？ (今回はエラー)
+        return res.status(404).json({ message: 'Item not found in cart to update. Use POST to add.' });
+    }else if(itemIndex === -1 && quantity === 0){
+        return res.json(cart)
+    }
+    if(quantity === 0){
+        userCarts[userId] = cart.filter(item => item.id !== productIdToUpdate);
+    }else{
+        cart[itemIndex].quantity = quantity;
+    }
+    // console.log(`[API PUT /api/cart/items/:productId] Cart for ${userId} quantity updated:`, userCarts[userId]);
+    res.json(userCarts[userId]);
 });
+
+// DELETE /api/cart/items/:productId - カートから商品を完全に削除
+app.delete('/api/cart/items/:productId', (req, res) => {
+    const userId = 'defaultUser';
+    const productIdToRemove = parseInt(req.params.productId, 10);
+    console.log(`productIdToRemove: ${productIdToRemove}`);
+
+    if (isNaN(productIdToRemove)) {
+        return res.status(400).json({ message: 'Invalid productId.' });
+    }
+    if (!userCarts[userId]) {
+        userCarts[userId] = [];
+    }
+
+    const initialLength = userCarts[userId].length;
+    userCarts[userId] = userCarts[userId].filter(item => item.id !== productIdToRemove);
+    if(userCarts[userId].length === initialLength){
+        return res.status(404).json({ message: 'Item not found in cart or already removed.' });
+    }
+    console.log(`[API DELETE /api/cart/items/:productId] Cart for ${userId} item removed:`, userCarts[userId]);
+    res.json(userCarts[userId]);
+});
+
+// DELETE /api/cart - カートを空にする (POST /api/cart/clear もあり)
+app.delete('/api/cart', (req, res) => {
+    const userId = 'defaultUser';
+    userCarts[userId] = [];
+    console.log(`[API DELETE /api/cart] Cart for ${userId} cleared.`);
+    res.json(userCarts[userId]);
+});
+
+// リクエストの待受を開始
+if( require.main === module){
+    app.listen(PORT, () => {
+        console.log(`API server running on http://localhost:${PORT}`);
+    });
+}else{
+    module.exports = app;
+}
