@@ -1,11 +1,11 @@
 const request = require('supertest');
 const app = require('./server');
-import {expect} from 'vitest';
 
 describe('Cart API Endpoints', () => {
     let initialProductsInCart = [];
 
-    beforeEach(() => {
+    beforeEach(async() => {
+        await request(app).delete('/api/cart');
     });
     afterEach(async() => {
         await request(app).delete('/api/cart');
@@ -48,7 +48,7 @@ describe('Cart API Endpoints', () => {
             expect(res.statusCode).toEqual(404);
         });
     });
-    describe('PUT /api/cart/items/:puroductId', () => {
+    describe('PUT /api/cart/items/:productId', () => {
         beforeEach(async () => {
             await request(app).post('/api/cart/items').send({productId:1, quantity: 2});
         });
@@ -88,9 +88,9 @@ describe('Cart API Endpoints', () => {
             expect(res.body.find(item => item.id === 2)).toBeDefined();
         });
         it('存在しない商品を削除しようとした場合、ステータスコード"404"を返す', async () => {
-            const res = request(app).delete('/api/cart/items/999');
+            const res = await request(app).delete('/api/cart/items/999');
 
-            expect((await res).statusCode).toEqual(404);
+            expect(res.statusCode).toEqual(404);
         });
     });
     describe('DELETE /api/cart', () => {

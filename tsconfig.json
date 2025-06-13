@@ -1,27 +1,27 @@
 {
   "compilerOptions": {
-    "target": "es2020", // Node.jsのバージョンに合わせて調整
-    "module": "commonjs", // Expressサーバーで require を使っているので commonjs
-    "esModuleInterop": true, // import * as express from 'express' のようなインポートを許可
+    "target": "ES2020",          /* 最新のJavaScript機能が使えるようにターゲットを指定 */
+    "module": "NodeNext",        /* Node.jsの最新のモジュールシステムに合わせる */
+    "moduleResolution": "NodeNext",
+    "baseUrl": ".",              /* モジュールインポートの基点 */
+    "outDir": "./dist",          /* コンパイル後のJSファイルの出力先 */
+    // "rootDir": "./src",          /* TypeScriptソースコードのルートディレクトリ */
+    "esModuleInterop": true,     /* CommonJSモジュールとの相互運用を可能にする */
+    "forceConsistentCasingInFileNames": true, /* ファイル名の大文字・小文字を区別する */
     "strict": true,          // 厳格な型チェックを有効化 (推奨)
     "skipLibCheck": true,    // 依存ライブラリの型チェックをスキップ (ビルド高速化)
-    "forceConsistentCasingInFileNames": true,
-    "outDir": "./dist",      // (オプション) ビルド時の出力先
-    "rootDir": "./",         // (オプション) ソースファイルのルート
-    "resolveJsonModule": true, // JSONファイルのインポートを許可
-    "types": [
-        "node", // Node.jsの型定義
-        "vitest/globals" // VitestのグローバルAPIの型定義
-    ]
+    "resolveJsonModule": true // JSONファイルのインポートを許可
   },
   "include": [
-    "server.js", // または server.ts
-    "tests/**/*.ts", // テストファイル
-    "vitest.config.ts" // Vitest設定ファイル
+    "src/**/*", /* コンパイル対象にsrcディレクトリ以下の全ファイルを含める */
+    "prisma/seed.ts"
+    // "server.js", // または server.ts
+    // "tests/**/*.ts", // テストファイル
+    // "../vitest.config.ts", // Vitest設定ファイル
     // プロジェクトに含まれる他の .ts ファイルや .js ファイル
   ],
   "exclude": [
-    "node_modules",
+    "node_modules", /* node_modulesはコンパイル対象から除外 */
     "dist" // ビルド出力先 (もしあれば)
   ]
 }

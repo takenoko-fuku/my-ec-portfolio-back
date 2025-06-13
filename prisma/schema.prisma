@@ -1,0 +1,50 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 商品モデル
+model Product {
+  id          Int      @id @default(autoincrement())
+  title       String   @unique
+  price       Float
+  description String
+  category    String
+  image       String?
+  ratingRate  Float
+  ratingCount Int
+  cartItems   CartItem[] // この商品がどのカートアイテムに含まれているか
+}
+
+// ユーザーモデル
+// Firebase Authenticationのユーザーと1対1で対応させる
+model User {
+  id        String     @id // FirebaseのUIDをそのままIDとして使う
+  email     String     @unique
+  createdAt DateTime   @default(now())
+  cartItems CartItem[] // このユーザーが持つカートアイテム
+}
+
+// カートアイテムモデル
+// 「誰が」「どの商品を」「いくつ」カートに入れているか、を表現する中間テーブル
+model CartItem {
+  id         Int      @id @default(autoincrement())
+  quantity   Int
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String   // どのユーザーのものか
+  product    Product  @relation(fields: [productId], references: [id])
+  productId  Int      // どの商品か
+
+  @@unique([userId, productId]) // 同じユーザーが同じ商品を2行持たないようにする
+}
