@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import adimn from 'firebase-admin';
-import { applicationDefault } from "firebase-admin/app";
+import { cert, ServiceAccount } from "firebase-admin/app";
+
+import serviceAccountJson from '../../config/my-portfolio-ec-site-firebase-adminsdk-fbsvc-32e967b49d.json';
+const serviceAccount = serviceAccountJson as ServiceAccount;
 
 // // ExpressのRequest型を拡張して、userプロパティを持てるようにする
 // // これで、他の場所でreq.userを安全に使えるようになる
@@ -13,8 +16,8 @@ import { applicationDefault } from "firebase-admin/app";
 // }
 if(!adimn.apps.length) {
     adimn.initializeApp({
-        credential: applicationDefault(),
-    })
+        credential: cert(serviceAccount)
+    });
 }
 
 const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {

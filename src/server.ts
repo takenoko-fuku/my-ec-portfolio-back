@@ -5,6 +5,7 @@ import 'dotenv/config';
 import authMiddleware from "./middleware/authMiddleware";
 import productApiRoutes from './api/products';
 import cartApiRoutes from './api/cart';
+import orderApiRoutes from './api/orders';
 
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
@@ -18,6 +19,7 @@ app.get('/', (req: Request, res: Response) => {
 
 app.use('/api/cart', authMiddleware, cartApiRoutes);
 app.use('/api/products', productApiRoutes);
+app.use('/api/orders', authMiddleware, orderApiRoutes);
 
 app.listen(PORT, () => {
     console.log(`[server]: Server is running at http://localhost:${PORT}`);
