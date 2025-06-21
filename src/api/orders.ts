@@ -85,7 +85,20 @@ router.post('/', async (req: Request, res: Response) => {
             return order;
         });
 
-        res.status(201).json(createOrder);
+        const newCompleteOrder = await prisma.order.findUnique({
+            where: {
+                id: createOrder.id
+            },
+            include: {
+                items: {
+                    include: {
+                        product: true,
+                    },
+                },
+            },
+        });
+
+        res.status(201).json(newCompleteOrder);
     }catch (error: any) {
         console.error("[order] Failed to create order:", error);
         res.status(500).json({error: "注文の作成に失敗しました。"});
