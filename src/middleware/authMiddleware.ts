@@ -5,15 +5,6 @@ import { cert, ServiceAccount } from "firebase-admin/app";
 import serviceAccountJson from '../../config/my-portfolio-ec-site-firebase-adminsdk-fbsvc-32e967b49d.json';
 const serviceAccount = serviceAccountJson as ServiceAccount;
 
-// // ExpressのRequest型を拡張して、userプロパティを持てるようにする
-// // これで、他の場所でreq.userを安全に使えるようになる
-// declare global {
-//     namespace Express {
-//         interface Request {
-//             user?: adimn.auth.DecodedIdToken;
-//         }
-//     }
-// }
 if(!adimn.apps.length) {
     adimn.initializeApp({
         credential: cert(serviceAccount)

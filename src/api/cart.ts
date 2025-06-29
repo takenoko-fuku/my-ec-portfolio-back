@@ -6,7 +6,7 @@ interface AddToCartRequestBody {
   quantity: number;
 };
 interface UpdateCartRequestParams {
-    itemId: string;
+    cartItemId: string;
 };
 interface UpdateCartRequestBody {
     quantity: number;
@@ -63,8 +63,7 @@ router.post('/', async (req: Request<{},{},AddToCartRequestBody>, res: Response)
         return;
     }
 
-    // ...Prismaを使ったDB操作ロジックは同じ...
-    // Prismaのおかげで、newItemなどの変数は自動で型がつく
+    // upsertを使い、userIdがまだ存在しなければ新規作成する
     try {
         await prisma.user.upsert({
             where: {id: userId},
@@ -96,18 +95,18 @@ router.post('/', async (req: Request<{},{},AddToCartRequestBody>, res: Response)
     }
 });
 
-// PUT /api/cart/:itemId - 特定のカートアイテムの数量を変更
-router.put('/:itemId', async (req:Request<UpdateCartRequestParams,{},UpdateCartRequestBody>, res: Response) => {
+// PUT /api/cart/:cartItemId - 特定のカートアイテムの数量を変更
+router.put('/:cartItemId', async (req:Request<UpdateCartRequestParams,{},UpdateCartRequestBody>, res: Response) => {
     if(!req.user){
         res.status(401).json({error: '認証情報がありません。'});
         return;
     }
     const userId = req.user!.uid;
-    const {itemId} = req.params;
+    const {cartItemId} = req.params;
     const {quantity} = req.body;
     
-    const itemIdNum = parseInt(itemId, 10);
-    if (isNaN(itemIdNum)) {
+    const cartItemIdNum = parseInt(cartItemId, 10);
+    if (isNaN(cartItemIdNum)) {
         res.status(400).json({error: "アイテムIDが不正です。"});
         return;
     }
@@ -119,7 +118,7 @@ router.put('/:itemId', async (req:Request<UpdateCartRequestParams,{},UpdateCartR
         const result = await prisma.cartItem.updateMany({
             where: {
                 userId: userId,
-                id: itemIdNum,
+                id: cartItemIdNum,
             },
             data: {
                 quantity: quantity,
@@ -130,7 +129,7 @@ router.put('/:itemId', async (req:Request<UpdateCartRequestParams,{},UpdateCartR
             return;
         }
         const updateItem = await prisma.cartItem.findUnique({
-            where: {id: itemIdNum},
+            where: {id: cartItemIdNum},
             include: {product: true},
         });
         res.status(200).json(updateItem);
@@ -140,17 +139,17 @@ router.put('/:itemId', async (req:Request<UpdateCartRequestParams,{},UpdateCartR
     }
 });
 
-// DELETE /api/cart/:itemId - 特定のカートアイテムを削除
-router.delete('/:itemId', async (req: Request, res: Response) => {
+// DELETE /api/cart/:cartItemId - 特定のカートアイテムを削除
+router.delete('/:cartItemId', async (req: Request, res: Response) => {
     if(!req.user){
         res.status(401).json({error: '認証情報がありません。'});
         return;
     }
     const userId = req.user!.uid;
-    const {itemId} = req.params;
-    const itemIdNum = parseInt(itemId, 10);
+    const {cartItemId} = req.params;
+    const cartItemIdNum = parseInt(cartItemId, 10);
 
-    if (isNaN(itemIdNum)) {
+    if (isNaN(cartItemIdNum)) {
         res.status(400).json({ error: 'アイテムIDが不正です。' });
         return;
     }
@@ -158,7 +157,7 @@ router.delete('/:itemId', async (req: Request, res: Response) => {
     try {
         const result = await prisma.cartItem.deleteMany({
             where:{
-                id: itemIdNum,
+                id: cartItemIdNum,
                 userId: userId,
             }
         });

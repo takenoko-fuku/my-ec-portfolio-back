@@ -55,9 +55,7 @@ router.post('/', async (req: Request, res: Response) => {
         }
 
         const totalPrice = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-        // 【Prisma解説】$transaction: 複数のDB操作を「一つの処理単位」として実行します。
-        // これにより、途中でエラーが起きた場合、全ての操作が取り消され（ロールバック）、
-        // データが中途半端な状態になるのを防ぎます。非常に重要で実践的な機能です。
+        // $transaction: 複数のDB操作を「一つの処理単位」として実行するトランザクション処理
         const createOrder = await prisma.$transaction(async (tx) => {
             // 1.テーブル作成
             const order = await tx.order.create({
@@ -77,7 +75,7 @@ router.post('/', async (req: Request, res: Response) => {
                 })),
             });
 
-            //3.CartItemテーブルから、このユーザーのカートを全削除
+            // 3.CartItemテーブルから、このユーザーのカートを全削除
             await tx.cartItem.deleteMany({
                 where: {userId: userId}
             });
@@ -85,6 +83,7 @@ router.post('/', async (req: Request, res: Response) => {
             return order;
         });
 
+        // 更新された購入履歴(1件)を取得
         const newCompleteOrder = await prisma.order.findUnique({
             where: {
                 id: createOrder.id

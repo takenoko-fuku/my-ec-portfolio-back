@@ -23,6 +23,8 @@ const transformProductForFrontend = (product: Product) => {
 router.get('/', async (req: Request, res: Response) => {
     const searchTerm = typeof req.query.search === 'string'? req.query.search : undefined;
     const categoryTerm = typeof req.query.category === 'string'? req.query.category : undefined;
+    const sortBy = typeof req.query.sortBy === 'string'? req.query.sortBy : 'id';
+    const sortOrder = req.query.sortOrder === 'desc'? 'desc' : 'asc';
 
     try {
         // 検索条件を動的に構築するためのオブジェクトを準備
@@ -31,6 +33,7 @@ router.get('/', async (req: Request, res: Response) => {
         if(searchTerm) {
             where.title = {
                 contains: searchTerm,
+                // 大文字小文字を区別しない
                 mode: 'insensitive',
             };
         }
@@ -38,18 +41,29 @@ router.get('/', async (req: Request, res: Response) => {
             where.category = categoryTerm;
         }
 
-        // Step A: DBからは「平坦な」データを取得する
+        // orderBy区オブジェクトの準備
+        let orderBy: Prisma.ProductOrderByWithRelationInput;
+        // ratingはデータベースでは'ratingRate'というカラム名なので変換する
+        switch(sortBy) {
+            case 'price':
+                orderBy = {price: sortOrder};
+                break;
+            case 'rating':
+                orderBy = {ratingRate: sortOrder};
+                break;
+            default:
+                orderBy = {id: sortOrder};
+                break;
+        }
+
         const productsFromDb = await prisma.product.findMany({
             where: where,
-            orderBy: {
-                id: 'asc',
-            }
+            orderBy: orderBy,
         });
 
-        // Step B: フロントエンドが期待する「ネストした」形式に変換する
+        // フロントエンドが期待する「ネストした」形式に変換する
         const productForFrontend = productsFromDb.map(transformProductForFrontend);
 
-        // Step C: 変換後のデータをフロントエンドに返す
         res.status(200).json(productForFrontend);
     } catch (error: any) {
         console.error("Failed to fetch products:", error);
